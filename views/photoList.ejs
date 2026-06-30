@@ -1,0 +1,139 @@
+<%- include('partials/head') %>
+    <%- include('partials/header') %>
+
+        <main class="p-4 sm:p-6">
+
+            <h2 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">📂 Photo List</h2>
+
+            <% if (photos.length===0) { %>
+                <div class="text-center py-16 text-gray-400">
+                    <div class="text-5xl mb-3">🚫</div>
+                    <p>No photos found</p>
+                    <a href="/" class="mt-4 inline-block text-sm text-indigo-400 hover:text-indigo-300">Upload your
+                        first photo →</a>
+                </div>
+                <% } else { %>
+
+                    <!-- MOBILE: card layout -->
+                    <div class="flex flex-col gap-3 sm:hidden">
+                        <% photos.forEach((photo)=> { %>
+                            <div class="bg-white/5 border border-white/10 rounded-xl p-4 flex gap-3 items-start">
+
+                                <!-- Thumbnail -->
+                                <% if (photo.originalUrl) { %>
+                                    <img src="<%= photo.originalUrl %>" alt="preview"
+                                        class="w-12 h-14 object-contain rounded border border-white/10 bg-black flex-shrink-0" />
+                                    <% } else { %>
+                                        <div
+                                            class="w-12 h-14 rounded border border-white/10 bg-black flex-shrink-0 flex items-center justify-center text-gray-600 text-xs">
+                                            —</div>
+                                        <% } %>
+
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm text-gray-200 truncate font-medium">
+                                                    <%= photo.filename %>
+                                                </p>
+                                                <p class="text-xs text-gray-400 mt-0.5">Qty: <%= photo.quantity %>
+                                                </p>
+
+                                                <div class="flex items-center gap-2 mt-2 flex-wrap">
+                                                    <% if (photo.status==="Printed" ) { %>
+                                                        <span
+                                                            class="px-2 py-0.5 text-xs rounded bg-green-500/20 text-green-400">Printed</span>
+                                                        <% } else { %>
+                                                            <span
+                                                                class="px-2 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">Pending</span>
+                                                            <% } %>
+
+                                                                <% if (photo.printUrl) { %>
+                                                                    <a href="<%= photo.printUrl %>" target="_blank"
+                                                                        class="text-xs text-indigo-400 hover:text-indigo-300">View
+                                                                        →</a>
+                                                                    <% } %>
+
+                                                                        <% if (photo.status !=="Printed" ) { %>
+                                                                            <a href="/printedAck/<%= photo._id %>"
+                                                                                class="px-2 py-0.5 text-xs rounded-lg bg-pink-500 hover:bg-pink-600 transition">
+                                                                                Mark Printed
+                                                                            </a>
+                                                                            <% } else { %>
+                                                                                <span
+                                                                                    class="text-gray-500 text-xs">Done</span>
+                                                                                <% } %>
+                                                </div>
+                                            </div>
+
+                            </div>
+                            <% }) %>
+                    </div>
+
+                    <!-- DESKTOP: table layout -->
+                    <div class="hidden sm:block overflow-x-auto rounded-xl border border-white/10">
+                        <table class="w-full text-sm">
+                            <thead class="bg-white/5 text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">Preview</th>
+                                    <th class="px-4 py-3 text-left">Filename</th>
+                                    <th class="px-4 py-3 text-left">Qty</th>
+                                    <th class="px-4 py-3 text-left">Status</th>
+                                    <th class="px-4 py-3 text-left">Sheet</th>
+                                    <th class="px-4 py-3 text-left">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/10">
+                                <% photos.forEach((photo)=> { %>
+                                    <tr class="hover:bg-white/5 transition">
+                                        <td class="px-4 py-3">
+                                            <% if (photo.originalUrl) { %>
+                                                <img src="<%= photo.originalUrl %>" alt="preview"
+                                                    class="w-12 h-14 object-contain rounded border border-white/10 bg-black" />
+                                                <% } else { %>
+                                                    <span class="text-gray-500">—</span>
+                                                    <% } %>
+                                        </td>
+                                        <td class="px-4 py-3 text-gray-200 max-w-[160px] truncate">
+                                            <%= photo.filename %>
+                                        </td>
+                                        <td class="px-4 py-3 text-gray-300">
+                                            <%= photo.quantity %>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <% if (photo.status==="Printed" ) { %>
+                                                <span
+                                                    class="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">Printed</span>
+                                                <% } else { %>
+                                                    <span
+                                                        class="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">Pending</span>
+                                                    <% } %>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <% if (photo.printUrl) { %>
+                                                <a href="<%= photo.printUrl %>" target="_blank"
+                                                    class="text-indigo-400 hover:text-indigo-300 transition">View →</a>
+                                                <% } else { %>
+                                                    <span class="text-gray-500">N/A</span>
+                                                    <% } %>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <% if (photo.status !=="Printed" ) { %>
+                                                <a href="/printedAck/<%= photo._id %>"
+                                                    class="px-3 py-1 text-xs rounded-lg bg-pink-500 hover:bg-pink-600 transition">
+                                                    Mark Printed
+                                                </a>
+                                                <% } else { %>
+                                                    <span class="text-gray-500 text-xs">Done</span>
+                                                    <% } %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <% } %>
+
+        </main>
+
+        </body>
+
+        </html>

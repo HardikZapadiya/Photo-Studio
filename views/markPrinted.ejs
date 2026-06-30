@@ -1,0 +1,67 @@
+<%- include('partials/head') %>
+
+        <main class="flex-grow flex items-center justify-center px-4">
+
+            <div
+                class="w-full max-w-md p-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+                <div class="bg-[#020617] rounded-2xl p-8 text-center">
+
+                    <div class="text-5xl mb-4">✅</div>
+                    <h2 class="text-2xl font-semibold mb-2">Marked as Printed</h2>
+                    <p class="text-sm text-gray-400 mb-6">This photo sheet has been marked as printed successfully.</p>
+
+                    <!-- Photo Info -->
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-4 text-left mb-6 space-y-2">
+
+                        <% if (photo.originalUrl) { %>
+                            <div class="flex justify-center mb-3">
+                                <img src="<%= photo.originalUrl %>" alt="Photo"
+                                    class="w-20 h-24 object-contain rounded-lg border border-white/10 bg-black" />
+                            </div>
+                            <% } %>
+
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Filename</span>
+                                    <span class="text-gray-200 truncate max-w-[180px]">
+                                        <%= photo.filename %>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Quantity</span>
+                                    <span class="text-gray-200">
+                                        <%= photo.quantity %>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Status</span>
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded bg-green-500/20 text-green-400">Printed</span>
+                                </div>
+
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="space-y-3">
+                        <% if (photo.printUrl) { %>
+                            <a href="<%= photo.printUrl %>" target="_blank"
+                                class="block w-full py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition">
+                                View Sheet 👁️
+                            </a>
+                            <% } %>
+                                <a href="/photos"
+                                    class="block w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition">
+                                    ← Back to Photo List
+                                </a>
+                                <a href="/" class="block text-sm text-gray-400 hover:text-white mt-2">
+                                    + Upload Another Photo
+                                </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+
+    </body>
+
+    </html>

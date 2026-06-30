@@ -1,0 +1,200 @@
+<%- include('partials/head') %>
+    <%- include('partials/header') %>
+
+        <main class="flex-grow flex items-center justify-center px-4 py-6">
+
+            <div
+                class="w-full max-w-sm sm:max-w-md p-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+                <div class="bg-[#020617] rounded-2xl p-5 sm:p-8">
+
+                    <h2 class="text-xl sm:text-2xl font-semibold text-center mb-1">Upload Photo</h2>
+                    <p class="text-xs sm:text-sm text-gray-400 text-center mb-5">Preview before generating sheet</p>
+
+                    <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+
+                        <!-- Upload Box -->
+                        <label
+                            class="flex flex-col items-center justify-center border border-white/10 rounded-xl p-6 sm:p-9 cursor-pointer hover:border-indigo-400 hover:bg-white/5 transition min-h-[160px]">
+                            <input type="file" id="fileInput" name="photo" accept="image/jpeg,image/png,image/webp"
+                                required class="hidden" />
+                            <img id="previewImage" class="hidden w-full max-h-48 object-contain rounded-lg mb-3"
+                                alt="Preview" />
+                            <div id="placeholder" class="text-center">
+                                <div class="text-3xl mb-2">📁</div>
+                                <p class="text-gray-300 font-medium text-sm">Click to upload</p>
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG, WEBP</p>
+                            </div>
+                        </label>
+
+                        <!-- Quantity + Crop -->
+                        <div>
+                            <label class="text-xs sm:text-sm text-gray-400 mb-1 block">Quantity</label>
+                            <div class="flex items-center gap-2">
+                                <select name="quantity" required
+                                    class="flex-1 bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                                    <option value="4">4 copies</option>
+                                    <option value="8">8 copies</option>
+                                    <option value="16">16 copies</option>
+                                    <option value="20">20 copies</option>
+                                </select>
+                                <button type="button" onclick="openCrop()"
+                                    class="px-3 sm:px-4 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 whitespace-nowrap text-sm font-medium">
+                                    ✂️ Crop
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit -->
+                        <button type="submit"
+                            class="w-full py-2.5 rounded-lg font-medium text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition">
+                            Generate Sheet 🚀
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Crop Modal -->
+        <div id="cropModal"
+            style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:50; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+            <div
+                style="width:100%; max-width:500px; background:#020617; border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; box-sizing:border-box; display:flex; flex-direction:column; gap:10px; max-height:calc(100vh - 24px);">
+
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                    <span style="font-size:13px; color:#9ca3af;">✂️ Adjust crop area</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <label for="ratioSelect" style="font-size:11px; color:#9ca3af;">Ratio</label>
+                        <select id="ratioSelect"
+                            style="background:#0f172a; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:4px 8px; font-size:12px; color:#fff; outline:none;">
+                            <option value="35/45">Passport 35:45</option>
+                            <option value="1">Square 1:1</option>
+                            <option value="4/3">4:3</option>
+                            <option value="0">Free</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="cropWrapper"
+                    style="flex:1; min-height:0; background:#000; border-radius:10px; overflow:hidden; position:relative; min-height:260px;">
+                    <div id="cropLoading"
+                        style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.75); z-index:10; align-items:center; justify-content:center; font-size:13px; color:#fff;">
+                        Loading...
+                    </div>
+                    <img id="cropImageEl" crossorigin="anonymous" style="display:block; max-width:100%;" alt="Crop" />
+                </div>
+
+                <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <button onclick="applyCrop()"
+                        style="flex:1; background:#6366f1; border:none; border-radius:8px; padding:11px; color:#fff; font-size:13px; font-weight:500; cursor:pointer;">
+                        ✅ Apply Crop
+                    </button>
+                    <button onclick="closeCrop()"
+                        style="flex:1; background:#374151; border:none; border-radius:8px; padding:11px; color:#fff; font-size:13px; font-weight:500; cursor:pointer;">
+                        Cancel
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+        <script>
+            const fileInput = document.getElementById("fileInput");
+            const previewImage = document.getElementById("previewImage");
+            const placeholder = document.getElementById("placeholder");
+            const cropImageEl = document.getElementById("cropImageEl");
+            const cropModal = document.getElementById("cropModal");
+            const cropWrapper = document.getElementById("cropWrapper");
+            const cropLoading = document.getElementById("cropLoading");
+            const ratioSelect = document.getElementById("ratioSelect");
+
+            let cropper = null;
+            let selectedFile = null;
+
+            function parseRatio(value) {
+                if (value === "0") return NaN;
+                const [w, h] = value.split("/").map(Number);
+                return w / h;
+            }
+
+            fileInput.addEventListener("change", function () {
+                const file = this.files[0];
+                if (!file) return;
+                selectedFile = file;
+                previewImage.src = URL.createObjectURL(file);
+                previewImage.classList.remove("hidden");
+                placeholder.classList.add("hidden");
+            });
+
+            function openCrop() {
+                if (!selectedFile) { alert("Please upload an image first."); return; }
+                if (cropper) { cropper.destroy(); cropper = null; }
+
+                cropLoading.style.display = "flex";
+                cropModal.style.display = "flex";
+                cropImageEl.removeAttribute("src");
+
+                setTimeout(() => {
+                    cropImageEl.src = URL.createObjectURL(selectedFile);
+                    cropImageEl.onload = function () {
+                        const h = cropWrapper.clientHeight;
+                        cropper = new Cropper(cropImageEl, {
+                            aspectRatio: parseRatio(ratioSelect.value),
+                            viewMode: 1,
+                            autoCropArea: 0.85,
+                            dragMode: "move",
+                            movable: true,
+                            zoomable: false,
+                            scalable: false,
+                            rotatable: false,
+                            cropBoxResizable: true,
+                            cropBoxMovable: true,
+                            minContainerHeight: h,
+                            maxContainerHeight: h,
+                        });
+                        cropLoading.style.display = "none";
+                    };
+                }, 100);
+            }
+
+            function closeCrop() {
+                cropModal.style.display = "none";
+                if (cropper) { cropper.destroy(); cropper = null; }
+                cropLoading.style.display = "none";
+            }
+
+            function applyCrop() {
+                if (!cropper) { alert("Cropper not ready."); return; }
+                const canvas = cropper.getCroppedCanvas({ width: 400, height: 480 });
+                if (!canvas) { alert("Crop failed."); return; }
+
+                canvas.toBlob(blob => {
+                    if (!blob) { alert("Could not process image."); return; }
+                    const croppedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
+                    const dt = new DataTransfer();
+                    dt.items.add(croppedFile);
+                    fileInput.files = dt.files;
+                    selectedFile = croppedFile;
+                    previewImage.src = URL.createObjectURL(croppedFile);
+                    previewImage.classList.remove("hidden");
+                    placeholder.classList.add("hidden");
+                    closeCrop();
+                }, "image/jpeg", 0.95);
+            }
+
+            ratioSelect.addEventListener("change", function () {
+                if (cropper) cropper.setAspectRatio(parseRatio(this.value));
+            });
+
+            cropModal.addEventListener("click", function (e) {
+                if (e.target === cropModal) closeCrop();
+            });
+        </script>
+
+        </body>
+
+        </html>

@@ -1,0 +1,202 @@
+<%- include('partials/head') %>
+    <%- include('partials/header') %>
+
+
+        <main class="flex-grow flex items-center justify-center px-4 py-6">
+
+            <div
+                class="w-full max-w-sm sm:max-w-md p-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+                <div class="bg-[#020617] rounded-2xl p-5 sm:p-6 text-center">
+
+                    <h2 class="text-lg sm:text-xl font-semibold mb-1">✅ Sheet Generated</h2>
+                    <p class="text-xs sm:text-sm text-gray-400 mb-4">Your passport photo sheet is ready</p>
+
+                    <!-- Sheet Preview -->
+                    <div
+                        class="w-full h-44 sm:h-56 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center bg-black mb-4">
+                        <img id="previewImage" src="<%= photos.printUrl %>?t=<%= Date.now() %>" alt="Sheet Preview"
+                            class="max-w-full max-h-full object-contain" />
+                    </div>
+
+                    <!-- Quantity + Crop row -->
+                    <div class="flex items-center gap-2 mb-4">
+                        <form action="/update-quantity/<%= photos._id %>" method="POST"
+                            class="flex items-center gap-2 flex-1">
+                            <select name="quantity"
+                                class="flex-1 bg-[#020617] border border-white/10 rounded-lg px-2 sm:px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                                <option value="4" <%=photos.quantity==4 ? "selected" : "" %>>4</option>
+                                <option value="8" <%=photos.quantity==8 ? "selected" : "" %>>8</option>
+                                <option value="16" <%=photos.quantity==16 ? "selected" : "" %>>16</option>
+                                <option value="20" <%=photos.quantity==20 ? "selected" : "" %>>20</option>
+                            </select>
+                            <button type="submit"
+                                class="px-3 sm:px-4 py-2 bg-indigo-500 rounded-lg hover:bg-indigo-600 whitespace-nowrap text-sm font-medium">
+                                Update
+                            </button>
+                        </form>
+                        <button onclick="openCrop()"
+                            class="px-3 sm:px-4 py-2 rounded-lg bg-pink-500 hover:bg-pink-600 whitespace-nowrap text-sm font-medium">
+                            ✂️ Crop
+                        </button>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="space-y-2 sm:space-y-3">
+                        <a href="<%= photos.printUrl %>" target="_blank"
+                            class="block w-full py-2 rounded-lg text-sm bg-indigo-500 hover:bg-indigo-600 transition">
+                            View Full Sheet 👁️
+                        </a>
+                        <a href="<%= photos.printUrl %>" download
+                            class="block w-full py-2 rounded-lg text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition">
+                            Download 📥
+                        </a>
+                    </div>
+
+                    <a href="/" class="block mt-4 text-xs sm:text-sm text-gray-400 hover:text-white">← Upload
+                        Another</a>
+
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Crop Modal -->
+        <div id="cropModal"
+            style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:50; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+            <div
+                style="width:100%; max-width:500px; background:#020617; border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; box-sizing:border-box; display:flex; flex-direction:column; gap:10px; max-height:calc(100vh - 24px);">
+
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+                    <span style="font-size:13px; color:#9ca3af;">✂️ Adjust crop area</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <label for="ratioSelect" style="font-size:11px; color:#9ca3af;">Ratio</label>
+                        <select id="ratioSelect"
+                            style="background:#0f172a; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:4px 8px; font-size:12px; color:#fff; outline:none;">
+                            <option value="35/45">Passport 35:45</option>
+                            <option value="1">Square 1:1</option>
+                            <option value="4/3">4:3</option>
+                            <option value="0">Free</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="cropWrapper"
+                    style="flex:1; min-height:260px; background:#000; border-radius:10px; overflow:hidden; position:relative;">
+                    <div id="cropLoading"
+                        style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.75); z-index:10; align-items:center; justify-content:center; font-size:13px; color:#fff;">
+                        Loading...
+                    </div>
+                    <img id="cropImage" crossorigin="anonymous" style="display:block; max-width:100%;" alt="Crop" />
+                </div>
+
+                <div style="display:flex; gap:8px; flex-shrink:0;">
+                    <button id="cropSaveButton" type="button"
+                        style="flex:1; background:#6366f1; border:none; border-radius:8px; padding:11px; color:#fff; font-size:13px; font-weight:500; cursor:pointer;">
+                        ✅ Crop & Save
+                    </button>
+                    <button type="button" onclick="closeCrop()"
+                        style="flex:1; background:#374151; border:none; border-radius:8px; padding:11px; color:#fff; font-size:13px; font-weight:500; cursor:pointer;">
+                        Cancel
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+        <script>
+            let cropper = null;
+            const cropModal = document.getElementById("cropModal");
+            const cropWrapper = document.getElementById("cropWrapper");
+            const cropImage = document.getElementById("cropImage");
+            const ratioSelect = document.getElementById("ratioSelect");
+            const cropSaveBtn = document.getElementById("cropSaveButton");
+            const cropLoading = document.getElementById("cropLoading");
+
+            function parseRatio(value) {
+                if (value === "0") return NaN;
+                const [w, h] = value.split("/").map(Number);
+                return w / h;
+            }
+
+            function openCrop() {
+                const originalUrl = "<%= photos.originalUrl ? photos.originalUrl : '/uploads/' + photos.filename %>";
+                if (cropper) { cropper.destroy(); cropper = null; }
+                cropLoading.style.display = "flex";
+                cropModal.style.display = "flex";
+                cropSaveBtn.disabled = false;
+                cropSaveBtn.textContent = "✅ Crop & Save";
+
+                cropImage.onload = function () {
+                    const h = cropWrapper.clientHeight;
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: parseRatio(ratioSelect.value),
+                        viewMode: 1,
+                        autoCropArea: 0.85,
+                        dragMode: "move",
+                        movable: true,
+                        zoomable: false,
+                        scalable: false,
+                        rotatable: false,
+                        cropBoxResizable: true,
+                        cropBoxMovable: true,
+                        minContainerHeight: h,
+                        maxContainerHeight: h,
+                    });
+                    cropLoading.style.display = "none";
+                };
+
+                cropImage.onerror = function () { alert("Failed to load image."); closeCrop(); };
+                cropImage.src = originalUrl + "?t=" + Date.now();
+            }
+
+            function closeCrop() {
+                cropModal.style.display = "none";
+                if (cropper) { cropper.destroy(); cropper = null; }
+                cropLoading.style.display = "none";
+            }
+
+            function applyCrop() {
+                if (!cropper) { alert("Cropper not ready."); return; }
+                const canvas = cropper.getCroppedCanvas({ width: 350, height: 450 });
+                if (!canvas) { alert("Crop failed."); return; }
+
+                canvas.toBlob((blob) => {
+                    if (!blob) { alert("Could not process image."); return; }
+                    cropSaveBtn.disabled = true;
+                    cropSaveBtn.textContent = "Saving...";
+                    const formData = new FormData();
+                    formData.append("photo", blob, "cropped.jpg");
+
+                    fetch("/crop/<%= photos._id %>", { method: "POST", body: formData })
+                        .then(async (res) => {
+                            cropSaveBtn.disabled = false;
+                            cropSaveBtn.textContent = "✅ Crop & Save";
+                            if (!res.ok) {
+                                const json = await res.json().catch(() => ({}));
+                                throw new Error(json.error || "Server error " + res.status);
+                            }
+                            return res.json();
+                        })
+                        .then((data) => {
+                            if (!data.success) throw new Error(data.error || "Crop save failed.");
+                            window.location.reload();
+                        })
+                        .catch((err) => { console.error(err); alert("Crop save failed."); });
+                }, "image/jpeg", 0.95);
+            }
+
+            ratioSelect.addEventListener("change", function () {
+                if (cropper) cropper.setAspectRatio(parseRatio(this.value));
+            });
+
+            cropSaveBtn.addEventListener("click", applyCrop);
+            cropModal.addEventListener("click", function (e) {
+                if (e.target === cropModal) closeCrop();
+            });
+        </script>
+
+        </body>
+
+        </html>
